@@ -32,4 +32,4 @@ build/
 ### VS Code ###
 .vscode/
 src/main/java/Controller/Prueba.java
-src/resources/static/documentos/
+src/main/resources/static/documentos/
