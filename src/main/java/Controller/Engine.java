@@ -1,15 +1,16 @@
 package Controller;
 
 import java.io.File;
+import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.HashMap;
 
 public class Engine {
     HashMap<String, ArrayList<Integer>> vocabulary;
-    DBConnection connection;
+    Connection connection;
     public Engine(){
         vocabulary = new HashMap<>();
-        connection = DBConnection.createConnection();
+        connection = DBConnection.getConnection();
     }
 
     public void index(boolean force) {
