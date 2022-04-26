@@ -7,6 +7,9 @@ import java.sql.SQLException;
 public class DBConnection {
     private static Connection _connection;
 
+    private DBConnection() {
+    }
+
     private static void createConnection() {
         try {
             Connection _connection = DriverManager.getConnection("jdbc:postgresql://localhost:5432/g5earch", "postgres", "1234");
@@ -20,9 +23,5 @@ public class DBConnection {
             createConnection();
         }
         return _connection;
-    }
-
-    private DBConnection() {
-
     }
 }
