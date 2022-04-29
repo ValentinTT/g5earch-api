@@ -1,5 +1,6 @@
 package com.example.g5earchapi;
 
+import Controller.Engine;
 import Controller.Response;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -15,7 +16,11 @@ import java.util.HashMap;
 public class G5earchApiApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(G5earchApiApplication.class, args);
+        //SpringApplication.run(G5earchApiApplication.class, args);
+        Engine motor = new Engine();
+
+        motor.index(false);
+
     }
 
     @GetMapping(value = "/buscar", produces = "application/json")

@@ -23,25 +23,28 @@ public class Engine {
     }
 
     public void index(boolean force) {
-        connection = DBConnection.getConnection();
         //if(force) //remove db
         final File folder = new File("src/main/resources/static/documentos");
-        int idBook = 0;
+        String query = "INSERT INTO g5earch.g5earch.documentos (titulo, \"URI\") VALUES ";
+
         for (final File fileEntry : folder.listFiles()) {
             System.out.println(fileEntry.getName());
 
             if(bookIsIndexed(fileEntry.getName())) continue;
-            else {
-                idBook++;
-                try {
-                    String query = "INSERT INTO g5earch.g5earch.documentos VALUES (" + idBook + ", '" + fileEntry.getName() + "', '" + fileEntry.getAbsolutePath() + "');";
-                    PreparedStatement ps = connection.prepareStatement(query);
-                    ps.execute();
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
+            else { //Agrego el documento nuevo si no está indexado
+                query += "('" + fileEntry.getName() + "', '" + fileEntry.getPath() + "'),";
             }
-            indexBook(fileEntry.getAbsolutePath());
+            //Indexar documento actual
+            //indexBook(fileEntry.getAbsolutePath());
+        }
+        //Termino de armar la query para insertar
+        query = query.substring(0, query.length()-1);
+        query += ";";
+        try {
+            PreparedStatement ps = connection.prepareStatement(query);
+            ps.execute();
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
         //print vocabulary
         printVocab();
