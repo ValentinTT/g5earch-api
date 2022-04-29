@@ -6,6 +6,8 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.sql.Array;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -21,14 +23,25 @@ public class Engine {
     }
 
     public void index(boolean force) {
+        connection = DBConnection.getConnection();
         //if(force) //remove db
         final File folder = new File("src/main/resources/static/documentos");
+        int idBook = 0;
         for (final File fileEntry : folder.listFiles()) {
             System.out.println(fileEntry.getName());
 
             if(bookIsIndexed(fileEntry.getName())) continue;
+            else {
+                idBook++;
+                try {
+                    String query = "INSERT INTO g5earch.g5earch.documentos VALUES (" + idBook + ", '" + fileEntry.getName() + "', '" + fileEntry.getAbsolutePath() + "');";
+                    PreparedStatement ps = connection.prepareStatement(query);
+                    ps.execute();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
             indexBook(fileEntry.getAbsolutePath());
-            break;
         }
         //print vocabulary
         printVocab();
