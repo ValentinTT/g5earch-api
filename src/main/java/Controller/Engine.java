@@ -24,30 +24,24 @@ public class Engine {
     }
 
     public void index(boolean force) {
-        // if(force) //remove db
-        final File folder = new File("src/main/resources/static/documentos");
-        String query = "INSERT INTO g5earch.g5earch.documentos (titulo, \"URI\") VALUES ";
+        if (force)
+            deleteAllDB();
 
+        final File folder = new File("src/main/resources/static/documentos");
+        long startTime = System.nanoTime();
         for (final File fileEntry : folder.listFiles()) {
             System.out.println(fileEntry.getName());
 
             if (bookIsIndexed(fileEntry.getName()))
                 continue;
             else { // Agrego el documento nuevo si no está indexado
-                query += "('" + fileEntry.getName() + "', '" + fileEntry.getPath() + "'),";
+                postBook(fileEntry);
             }
             // Indexar documento actual
-            // indexBook(fileEntry.getAbsolutePath());
+            indexBook(fileEntry.getPath());
         }
         // Termino de armar la query para insertar
-        query = query.substring(0, query.length() - 1);
-        query += ";";
-        try {
-            PreparedStatement ps = connection.prepareStatement(query);
-            ps.execute();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+
         long endTime = System.nanoTime();
         System.out.println((endTime - startTime) / 1000000000);
         // print vocabulary
@@ -64,26 +58,24 @@ public class Engine {
         vocabulary.forEach((k, v) -> v.set(2, 0));
     }
 
-    private void postVocabulary(String bookTitle) {
+    private void postVocabulary(String bookURI) {
         // Add book to document's tablet
         // Add each vocabulary entry with index 2 != 0 to the table post
         try {
             ResultSet rs = connection.createStatement()
-                    .executeQuery("SELECT * FROM g5earch.g5earch.documentos WHERE titulo='" + bookTitle + "'");
+                    .executeQuery("SELECT * FROM g5earch.g5earch.documentos WHERE \"URI\"= '" + bookURI + "'");
             rs.next();
             final int bookId = rs.getInt("ID");
-            vocabulary.forEach((k, v) -> {
-                if (v.get(2) == 0)
-                    return;
-                // insert into post table
-                try {
-                    String query = "INSERT INTO g5earch.g5earch.terminos VALUES ('" + k.replace("'", "''") + "',"
-                            + bookId + "," + v.get(2) + ");";
-                    connection.prepareStatement(query).execute();
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-            });
+            StringBuilder query = new StringBuilder();
+            query.append("INSERT INTO g5earch.g5earch.terminos VALUES");
+            vocabulary.entrySet().stream().filter(e -> e.getValue().get(2) != 0)
+                    .forEach((e) -> {
+                        query.append(String.format("('%s',%d,%d),", e.getKey().replace("'", "''"), bookId, e.getValue().get(2)));
+                    });
+            query.deleteCharAt(query.length() - 1);
+            query.append(";");
+            connection.prepareStatement(query.toString()).execute();
+
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -100,7 +92,7 @@ public class Engine {
         }
     }
 
-    private void indexBook(String bookUri, String bookName) { // TODO: delete bookName
+    private void indexBook(String bookUri) {
         clearVocabulary();
         try {
             BufferedReader in = new BufferedReader(new FileReader(bookUri));
@@ -123,7 +115,7 @@ public class Engine {
                     }
                 }
             }
-            postVocabulary(bookName);
+            postVocabulary(bookUri);
             in.close();
         } catch (IOException e) {
             System.out.println("File Read Error");

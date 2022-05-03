@@ -10,7 +10,7 @@ public class DBConnection {
 
     private static void createConnection() {
         try {
-            _connection = DriverManager.getConnection("jdbc:postgresql://localhost:5432/g5earch", "postgres", "1234");
+            _connection = DriverManager.getConnection("jdbc:postgresql://localhost:5432/g5earch", "postgres", "datatalks");
         } catch (SQLException e) {
             e.printStackTrace();
         }
