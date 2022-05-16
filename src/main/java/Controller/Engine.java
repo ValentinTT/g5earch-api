@@ -5,7 +5,6 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -17,10 +16,15 @@ public class Engine {
     // nr tf aux
     HashMap<String, ArrayList<Integer>> vocabulary;
     Connection connection;
+    HashMap<String, ArrayList<Integer>> frequencyTable;
+    int numberOfBooks; //N
 
-    public Engine() {
+    public Engine(boolean shouldIndex) {
         vocabulary = new HashMap<>();
         connection = DBConnection.getConnection();
+        index(shouldIndex);
+        createFrequencyTable();
+        countBooks();
     }
 
     public void index(boolean force) {
@@ -30,8 +34,6 @@ public class Engine {
         final File folder = new File("src/main/resources/static/documentos");
         long startTime = System.nanoTime();
         for (final File fileEntry : folder.listFiles()) {
-            System.out.println(fileEntry.getName());
-
             if (bookIsIndexed(fileEntry.getName()))
                 continue;
             else { // Agrego el documento nuevo si no está indexado
@@ -39,13 +41,12 @@ public class Engine {
             }
             // Indexar documento actual
             indexBook(fileEntry.getPath());
+            break;
         }
-        // Termino de armar la query para insertar
-
         long endTime = System.nanoTime();
         System.out.println((endTime - startTime) / 1000000000);
         // print vocabulary
-        // printVocab();
+        //printVocab();
     }
 
     // TODO: remove
@@ -71,10 +72,12 @@ public class Engine {
             vocabulary.entrySet().stream().filter(e -> e.getValue().get(2) != 0)
                     .forEach((e) -> {
                         query.append(String.format("('%s',%d,%d),", e.getKey().replace("'", "''"), bookId, e.getValue().get(2)));
+                        System.out.println(String.format("('%s',%d,%d),", e.getKey().replace("'", "''"), bookId, e.getValue().get(2)));
                     });
             query.deleteCharAt(query.length() - 1);
             query.append(";");
-            connection.prepareStatement(query.toString()).execute();
+
+            //connection.prepareStatement(query.toString()).execute();
 
         } catch (SQLException e) {
             e.printStackTrace();
@@ -85,8 +88,8 @@ public class Engine {
         try {
             String query = "INSERT INTO g5earch.g5earch.documentos (titulo, \"URI\") VALUES ('" + fileEntry.getName()
                     + "', '" + fileEntry.getPath() + "');";
-            PreparedStatement ps = connection.prepareStatement(query);
-            ps.execute();
+            connection.prepareStatement(query).execute();
+
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -129,7 +132,7 @@ public class Engine {
      * @return
      */
     private boolean bookIsIndexed(String bookName) {
-
+        //TODO
         return false;
     }
 
@@ -142,6 +145,32 @@ public class Engine {
         try {
             connection.prepareStatement("DELETE FROM g5earch.g5earch.terminos").execute();
             connection.prepareStatement("DELETE FROM g5earch.g5earch.documentos").execute();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void createFrequencyTable() {
+        try {
+            ResultSet rs = connection.prepareStatement("select nombre, count(*), max(frecuencia) from g5earch.terminos group by nombre;").executeQuery();
+            String term;
+            ArrayList<Integer> array;
+            while (rs.next()) {
+                term = rs.getString(1);
+                array = new ArrayList<>(Arrays.asList(rs.getInt(2), rs.getInt(3)));
+                frequencyTable.put(term, array);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void countBooks() {
+        try {
+            ResultSet rs = connection.prepareStatement("select count(*) from g5earch.documentos;").executeQuery();
+            while (rs.next()) {
+                numberOfBooks = rs.getInt(1);
+            }
         } catch (SQLException e) {
             e.printStackTrace();
         }
