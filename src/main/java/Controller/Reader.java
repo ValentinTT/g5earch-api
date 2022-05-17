@@ -14,9 +14,8 @@ import java.util.Locale;
  */
 public class Reader {
 
-    private static HashMap<String, PostTerm> vocabulary = new HashMap<String, PostTerm>(100000);
-
     public static HashMap<String, PostTerm> createBookVocabulary(int bookID, String bookUri, String splitRegex) {
+        HashMap<String, PostTerm> vocabulary = new HashMap<>(100000);
         try {
             BufferedReader in = new BufferedReader(new FileReader(bookUri));
             String line;
@@ -31,6 +30,7 @@ public class Reader {
                         value.increase();
                 }
             }
+            //TODO: en mi opinión el return iría acá, en los catch o afuera iría null o algo así
         } catch (FileNotFoundException e) {
             System.out.println("File not found.");
             e.printStackTrace();
