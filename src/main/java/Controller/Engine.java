@@ -9,7 +9,6 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -21,76 +20,40 @@ public class Engine {
     Connection connection;
     HashMap<String, VocabularyWord> vocabulary;
     int numberOfBooks; //N
-    private static String splitRegex = "[,;:*\\s.\"¿?!¡{}\\[\\]\\(\\)]";
+    private static final String splitRegex = "[,;:*\\s.\"¿?!¡{}\\[\\]\\(\\)]";
 
     public Engine(boolean shouldIndex) {
         connection = DBConnection.getConnection();
         index(shouldIndex);
-        createVocabulary();
+        vocabulary = DBConnection.createVocabulary();
         countBooks();
     }
 
     public void index(boolean forceReindexing) {
         connection = DBConnection.getConnection();
         if (forceReindexing)
-            deleteAllDB(); //remove db
+            DBConnection.deleteAllDB(); //remove db
 
         final File folder = new File("src/main/resources/static/documentos");
 
         for (final File fileEntry : folder.listFiles()) {
             System.out.println(fileEntry.getName());
             if (bookIsIndexed(fileEntry.getName())) continue;
-            else postBook(fileEntry);
+            else DBConnection.postBook(fileEntry);
 
             //indexBook(fileEntry.getAbsolutePath(), fileEntry.getName());
-            int bookId = getBookId(fileEntry.getName());
+            int bookId = DBConnection.getBookId(fileEntry.getName());
             indexBook(bookId, fileEntry.getPath());
             break;
         }
     }
 
-    private int getBookId(String bookTitle) {
-        try {
-            ResultSet rs = connection.createStatement().executeQuery("SELECT * FROM g5earch.g5earch.documentos WHERE titulo='" + bookTitle + "'");
-            if(rs.next())
-                return rs.getInt("ID");
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return -1;
+    private void postVocabulary(HashMap<String, PostTerm> vocabulary) {
+        // Add book to document's tablet
+        DBConnection.postVocabulary(vocabulary);
     }
 
-    private void postVocabulary(int bookId, HashMap<String, PostTerm> vocabulary) {
-        try {
-            StringBuilder query = new StringBuilder();
-            query.append("INSERT INTO g5earch.g5earch.terminos VALUES");
-
-            vocabulary.forEach((k, v) ->
-                    query.append(String.format(
-                            "('%s',%d,%d),",
-                            k.replace("'", "''"), v.getIdDoc(), v.getCount()
-                    ))
-            );
-
-            query.deleteCharAt(query.length() - 1);
-            query.append(";");
-            //connection.prepareStatement(query.toString()).execute();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void postBook(File fileEntry) {
-        try {
-            String query = "INSERT INTO g5earch.g5earch.documentos (titulo, \"URI\") VALUES ('" + fileEntry.getName() + "', '" + fileEntry.getPath() + "');";
-            PreparedStatement ps = connection.prepareStatement(query);
-            ps.execute();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void indexBook(int bookId, String bookUri) { //TODO: delete bookName
+    private void indexBook(int bookId, String bookUri) {
         HashMap<String, PostTerm> vocabulary = new HashMap<>(100000);
         try {
             BufferedReader in = new BufferedReader(new FileReader(bookUri));
@@ -108,7 +71,7 @@ public class Engine {
                     }
                 }
             }
-            postVocabulary(bookId, vocabulary);
+            postVocabulary(vocabulary);
             in.close();
         } catch (IOException e) {
             System.out.println("File Read Error");
@@ -122,36 +85,13 @@ public class Engine {
      * @return
      */
     private boolean bookIsIndexed(String bookName) {
-
+        //TODO
         return false;
     }
 
     public void addBook() {
         //adding book into the folder and then indexig
         //indexBook(bookUri);
-    }
-
-    private void deleteAllDB() {
-        try {
-            connection.prepareStatement("DELETE FROM g5earch.g5earch.terminos").execute();
-            connection.prepareStatement("DELETE FROM g5earch.g5earch.documentos").execute();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void createVocabulary() {
-        try {
-            ResultSet rs = connection.prepareStatement("select nombre, count(*), max(frecuencia) from g5earch.terminos group by nombre;").executeQuery();
-            String term;
-            ArrayList<Integer> array;
-            while (rs.next()) {
-                term = rs.getString(1);
-                vocabulary.put(term, new VocabularyWord(term, rs.getInt(2), rs.getInt(3)));
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
     }
 
     public void countBooks() {
@@ -171,17 +111,22 @@ public class Engine {
      */
     public ArrayList<String> search(String searchQuery, int numberOfResults) {
         String[] words = searchQuery.split(splitRegex);
-        ArrayList<VocabularyWord> q = new ArrayList(words.length*2);
+        ArrayList<VocabularyWord> q = new ArrayList(words.length * 2);
 
-        for(String word: words) {
+        for (String word : words) {
             VocabularyWord vocabularyWord = vocabulary.get(word);
-            if(vocabularyWord != null) q.add(vocabularyWord);
+            if (vocabularyWord != null) q.add(vocabularyWord);
         }
 
         Collections.sort(q);
 
-        HashMap<String, Response> LD = new HashMap<>(); //"nombre doc" o ID, Response
+        HashMap<String, Response> documentList = new HashMap<>(); //"nombre doc" o ID, Response
         q.stream().forEach(vocabularyWord -> {
+            //BUSCAR PARA CADA TERMINO (YA ESTAN ORDENADOS EN VOCABULARYWORD POR IDF), LOS R DOCUMENTOS (SI TIENE) DE MAYOR A MENOR TF.
+            //MANTENER LOS DOCUMENTOS ORDENADOS EN EL ORDEN EN EL QUE INGRESAN. SI UN DOCUMENTO APARECE MAS DE UNA VEZ (TERMINOS DISTINTOS)
+            //SUBIR DE RANKING AL DOC.
+            //
+
             //get numberOfResults documents for the word vocabularyWord
             //fijarse si están en LD, si está hacer response.updateRanking()
             //si no está crearlo con response(titulo, y un score) y en el futuro el uri y preview
