@@ -22,8 +22,9 @@ public class G5earchApiApplication {
     }
 
     @GetMapping(value = "/search", produces = "application/json")
-    public HashMap<String, ArrayList<Response>> search(@RequestParam(value = "text", defaultValue = "") String searchQuery) {
-        engine.search(searchQuery, 10);
+    public ArrayList<Response> search(@RequestParam(value = "text", defaultValue = "") String searchQuery) {
+        engine = new Engine(false);
+        return engine.search(searchQuery, 20);
 //        ArrayList<Response> arr = new ArrayList<>();
 //        for(int i = 0; i < Math.random()*5+3; i++) {
 //            arr.add(new Response("The Hobbit", "https://www.anderson1.org/site/handlers/filedownload.ashx?moduleinstanceid=24440&dataid=44258&FileName=hobbit.pdf", "In a hole in the ground there lived a hobbit. Not a nasty, dirty, wet hole, filled with the ends of worms and an oozy smell, nor yet a dry, bare, sandy hole with nothing in it to sit down on or to eat: it was a hobbit-hole, and that means comfort. "));
@@ -31,7 +32,7 @@ public class G5earchApiApplication {
 //        HashMap<String, ArrayList<Response>> response = new  HashMap<>();
 //        response.put("response", arr);
 //        return response;
-        return null;
+//        return null;
     }
     // /subir?libro=010101010101001011010010101 motor.add(libro.txt, titulo)
 }

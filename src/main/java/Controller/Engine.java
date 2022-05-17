@@ -4,12 +4,13 @@ import Model.PostTerm;
 import Model.Response;
 import Model.VocabularyWord;
 
-import javax.xml.transform.Result;
 import java.io.File;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+
 
 public class Engine {
     HashMap<String, VocabularyWord> vocabulary;
@@ -17,9 +18,26 @@ public class Engine {
     private static final String splitRegex = "[,;:*\\s.\"¿?!¡{}\\[\\]\\(\\)]";
 
     public Engine(boolean shouldIndex) {
-        index(shouldIndex);
-        vocabulary = DBConnection.createVocabulary();
+        DBConnection.getConnection();
+        //index(shouldIndex);
+        vocabulary = createVocabulary();
         numberOfBooks = DBConnection.countBooks();
+    }
+
+    private HashMap<String, VocabularyWord> createVocabulary() {
+        ResultSet rs = DBConnection.getAllTerms();
+        HashMap<String, VocabularyWord> vocabulary = new HashMap<>();
+        String term;
+        try {
+            while (rs.next()) {
+                term = rs.getString(1);
+                vocabulary.put(term, new VocabularyWord(term, rs.getInt(2), rs.getInt(3)));
+            }
+            return vocabulary;
+        } catch (SQLException e){
+            e.printStackTrace();
+        }
+        return null;
     }
 
     public void index(boolean forceReindexing) {
@@ -29,7 +47,7 @@ public class Engine {
         final File folder = new File("src/main/resources/static/documentos");
 
         for (final File fileEntry : folder.listFiles()) {
-            //TODO: fileEntry.hashCode();
+            //TODO: calculate hashCode
             if (bookIsIndexed(fileEntry.getName())) continue;
             else DBConnection.postBook(fileEntry);
 
@@ -41,6 +59,7 @@ public class Engine {
 
     /**
      * Post the vocabulary for each book
+     *
      * @param bookId
      * @param bookUri
      */
@@ -70,34 +89,41 @@ public class Engine {
      * @param numberOfResults //R --> number of documents to return
      * @return
      */
-    public ArrayList<String> search(String searchQuery, int numberOfResults) {
+    public ArrayList<Response> search(String searchQuery, int numberOfResults) {
         ArrayList<VocabularyWord> queryUser = buildQueryUser(searchQuery);
-        HashMap<String, Response> documentList = new HashMap<>(); //"nombre doc" or ID, Response
-        queryUser.stream().forEach(vocabularyWord -> {
+        HashMap<Integer, Response> documentList = new HashMap<>(); //HashMap<IDDoc, Response>
 
-            //BUSCAR PARA CADA TERMINO (YA ESTAN ORDENADOS EN VOCABULARYWORD POR IDF):
-            //      PARA TODOS LOS R DOCUMENTOS (O MENOS, VER ESTO), RECORRER DE MAYOR A MENOR TF
-            //          DOCUMENTO NO ESTA EN LD
-            //          {
-            //              AGREGAR Y MANTENER LOS DOCUMENTOS ORDENADOS POR "IR" (tf termino * idf)
-            //          }
-            //          SI ESTABA EN LD
-            //          {
-            //              SUBIR DE RANKING AL DOC DE ALGUNA FORMA.
-            //          }
-
-            //get numberOfResults documents for the word vocabularyWord
-            //fijarse si están en documentsList, si está hacer response.updateRanking()
-            //si no está crearlo con response(titulo, y un score) y en el futuro el uri y preview
-            //el score lo sacaría de vocabulary.tf (la frec en todos los docs) y la frecuencia en este documento
+        queryUser.stream().forEach(vocabularyWord -> { //iterate over query words
+            //increase for each document
+            double increase = Math.log10(numberOfBooks/(double)(vocabularyWord.getNr()));
+            ResultSet rsTerms = DBConnection.getTerm(vocabularyWord, numberOfResults);
+            try {
+                while (rsTerms.next()) {
+                    int ID = rsTerms.getInt("ID");
+                    //increase the relevance index, given the frequency (tf) of each term
+                    double relevanceIndex = rsTerms.getInt("frecuencia") * increase;
+                    if (documentList.get(ID) != null) { // update the response
+                        documentList.get(ID).increaseScore(relevanceIndex);
+                    } else {
+                        //create response object
+                        String name = rsTerms.getString("titulo");
+                        String URI = rsTerms.getString("URI");
+                        //TODO: definir que para los tf=0 no se lean y corte el ciclo
+                        String preview = ""; //TODO: definir el preview
+                        Response response = new Response(name, URI, preview, relevanceIndex);
+                        documentList.put(ID, response);
+                    }
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
         });
-
-        // cuando termino las palabras ordeno por algo responses //TODO: implementar comparable en Response
-        // devuelvo un subconjunto(numberOfResults) de documentsList
-        return null;
+        ArrayList<Response> result = new ArrayList<>(documentList.values());
+        Collections.sort(result);
+        return (ArrayList<Response>) result.subList(0, numberOfResults);
     }
 
-    private ArrayList<VocabularyWord> buildQueryUser(String searchQuery){
+    private ArrayList<VocabularyWord> buildQueryUser(String searchQuery) {
         String[] words = searchQuery.split(splitRegex);
 
         ArrayList<VocabularyWord> queryUser = new ArrayList(words.length * 2);
