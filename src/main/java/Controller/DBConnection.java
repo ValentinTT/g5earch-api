@@ -2,6 +2,7 @@ package Controller;
 
 import Model.PostTerm;
 import Model.VocabularyWord;
+
 import java.io.File;
 import java.sql.*;
 import java.util.ArrayList;
@@ -19,14 +20,14 @@ public class DBConnection {
         }
     }
 
-    public static Connection getConnection(){
-        if(_connection == null) {
+    public static Connection getConnection() {
+        if (_connection == null) {
             createConnection()
         }
         return _connection;
     }
 
-    public static void postVocabulary(HashMap<String, PostTerm> vocabulary){
+    public static void postVocabulary(HashMap<String, PostTerm> vocabulary) {
         try {
             StringBuilder query = new StringBuilder();
             query.append("INSERT INTO g5earch.g5earch.terminos VALUES");
@@ -56,7 +57,7 @@ public class DBConnection {
     public static int getBookId(String bookTitle) {
         try {
             ResultSet rs = _connection.createStatement().executeQuery("SELECT * FROM g5earch.g5earch.documentos WHERE titulo='" + bookTitle + "'");
-            if(rs.next())
+            if (rs.next())
                 return rs.getInt("ID");
         } catch (SQLException e) {
             e.printStackTrace();
@@ -66,6 +67,7 @@ public class DBConnection {
 
     public static void postBook(File fileEntry) {
         try {
+            //TODO calcular el hascode del libro
             String query = "INSERT INTO g5earch.g5earch.documentos (titulo, \"URI\") VALUES ('" + fileEntry.getName() + "', '" + fileEntry.getPath() + "');";
             PreparedStatement ps = _connection.prepareStatement(query);
             ps.execute();
@@ -91,8 +93,23 @@ public class DBConnection {
         return null;
     }
 
-
     public static int countBooks() {
-        _connection.prepareStatement("select count(*) from g5earch.documentos").executeQuery();
+        try {
+            return _connection.prepareStatement("select count(*) from g5earch.documentos").executeQuery().getInt(1);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return -1;
+    }
+
+    public ResultSet getTermPosted(VocabularyWord term){
+        try {
+            return _connection.prepareStatement("select documentos.*, terminos.frecuencia from g5earch.terminos join g5earch.documentos" +
+                    "on documentos.\"ID\" = terminos.\"IDDocumento\" where terminos.nombre='" + term.getWord() +
+                    "' order by terminos.frecuencia desc;").executeQuery();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }

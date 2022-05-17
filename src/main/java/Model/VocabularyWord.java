@@ -14,6 +14,29 @@ public class VocabularyWord implements Comparable<VocabularyWord> {
         this.tf = tf;
     }
 
+    public String getWord() {
+        return word;
+    }
+
+    public void setWord(String word) {
+        this.word = word;
+    }
+
+    public int getNr() {
+        return nr;
+    }
+
+    public void setNr(int nr) {
+        this.nr = nr;
+    }
+
+    public int getTf() {
+        return tf;
+    }
+
+    public void setTf(int tf) {
+        this.tf = tf;
+    }
 
     @Override
     public int compareTo(VocabularyWord o) {

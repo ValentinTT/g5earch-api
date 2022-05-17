@@ -4,7 +4,9 @@ import Model.PostTerm;
 import Model.Response;
 import Model.VocabularyWord;
 
+import javax.xml.transform.Result;
 import java.io.File;
+import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -27,29 +29,34 @@ public class Engine {
         final File folder = new File("src/main/resources/static/documentos");
 
         for (final File fileEntry : folder.listFiles()) {
-            System.out.println(fileEntry.getName());
+            //TODO: fileEntry.hashCode();
             if (bookIsIndexed(fileEntry.getName())) continue;
             else DBConnection.postBook(fileEntry);
 
             int bookId = DBConnection.getBookId(fileEntry.getName());
-            indexBook(bookId, fileEntry.getPath());
+            postVocabularyBook(bookId, fileEntry.getPath());
             break;
         }
     }
 
-    private void indexBook(int bookId, String bookUri) {
+    /**
+     * Post the vocabulary for each book
+     * @param bookId
+     * @param bookUri
+     */
+    private void postVocabularyBook(int bookId, String bookUri) {
         HashMap<String, PostTerm> vocabulary = Reader.createBookVocabulary(bookId, bookUri, splitRegex);
         DBConnection.postVocabulary(vocabulary);
     }
 
     /**
-     * Indica si existe un libro con el id de bookName
+     * Indicate if a book is previously indexed
      *
      * @param bookName
      * @return
      */
     private boolean bookIsIndexed(String bookName) {
-        //TODO
+        //TODO with hashcode
         return false;
     }
 
@@ -64,27 +71,15 @@ public class Engine {
      * @return
      */
     public ArrayList<String> search(String searchQuery, int numberOfResults) {
-        String[] words = searchQuery.split(splitRegex);
-
-        ArrayList<VocabularyWord> queryUser = new ArrayList(words.length * 2);
-
-        for (String word : words) {
-            //search for all words in our vocabulary
-            VocabularyWord vocabularyWord = vocabulary.get(word);
-            //add the word if its contained
-            if (vocabularyWord != null) queryUser.add(vocabularyWord);
-        }
-
-        Collections.sort(queryUser);
-
-        HashMap<String, Response> documentList = new HashMap<>(); //"nombre doc" o ID, Response
+        ArrayList<VocabularyWord> queryUser = buildQueryUser(searchQuery);
+        HashMap<String, Response> documentList = new HashMap<>(); //"nombre doc" or ID, Response
         queryUser.stream().forEach(vocabularyWord -> {
 
             //BUSCAR PARA CADA TERMINO (YA ESTAN ORDENADOS EN VOCABULARYWORD POR IDF):
             //      PARA TODOS LOS R DOCUMENTOS (O MENOS, VER ESTO), RECORRER DE MAYOR A MENOR TF
             //          DOCUMENTO NO ESTA EN LD
             //          {
-            //              AGREGAR Y MANTENER LOS DOCUMENTOS ORDENADOS POR "IR" (tfk * idf)
+            //              AGREGAR Y MANTENER LOS DOCUMENTOS ORDENADOS POR "IR" (tf termino * idf)
             //          }
             //          SI ESTABA EN LD
             //          {
@@ -100,6 +95,23 @@ public class Engine {
         // cuando termino las palabras ordeno por algo responses //TODO: implementar comparable en Response
         // devuelvo un subconjunto(numberOfResults) de documentsList
         return null;
+    }
+
+    private ArrayList<VocabularyWord> buildQueryUser(String searchQuery){
+        String[] words = searchQuery.split(splitRegex);
+
+        ArrayList<VocabularyWord> queryUser = new ArrayList(words.length * 2);
+
+        for (String word : words) {
+            //search for all words in our vocabulary
+            VocabularyWord vocabularyWord = vocabulary.get(word);
+            //add the word if its contained
+            if (vocabularyWord != null) queryUser.add(vocabularyWord);
+        }
+
+        //order by idf (less inverse frequencies) asc
+        Collections.sort(queryUser);
+        return queryUser;
     }
 }
 
