@@ -90,4 +90,9 @@ public class DBConnection {
         }
         return null;
     }
+
+
+    public static int countBooks() {
+        _connection.prepareStatement("select count(*) from g5earch.documentos").executeQuery();
+    }
 }

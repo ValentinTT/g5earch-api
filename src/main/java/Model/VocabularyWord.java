@@ -17,6 +17,6 @@ public class VocabularyWord implements Comparable<VocabularyWord> {
 
     @Override
     public int compareTo(VocabularyWord o) {
-        return nr - o.getNr();
+        return o.getNr() - nr;
     }
 }
