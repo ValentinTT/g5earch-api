@@ -42,11 +42,12 @@ public class Engine {
     }
 
     public void index(boolean forceReindexing) {
-        if (forceReindexing)
-            DBConnection.deleteAllDB(); //remove db
+        if (!forceReindexing)
+            return;
+
+        DBConnection.deleteAllDB(); //remove db
 
         final File folder = new File("src/main/resources/static/documentos");
-
         for (final File fileEntry : folder.listFiles()) {
             //TODO: calculate hashCode
             if (bookIsIndexed(fileEntry.getName())) continue;
@@ -102,12 +103,12 @@ public class Engine {
                 while (rsTerms.next()) {
                     int ID = rsTerms.getInt("ID");
                     //increase the relevance index, given the frequency (tf) of each term
-                    double relevanceIndex = rsTerms.getInt("frecuencia") * increase;
+                    double relevanceIndex = rsTerms.getInt("frequency") * increase;
                     if (documentList.get(ID) != null) { // update the response
                         documentList.get(ID).increaseScore(relevanceIndex);
                     } else {
                         //create response object
-                        String name = rsTerms.getString("titulo");
+                        String name = rsTerms.getString("title");
                         String URI = rsTerms.getString("URI");
                         //TODO: definir que para los tf=0 no se lean y corte el ciclo
                         String preview = ""; //TODO: definir el preview
@@ -120,7 +121,7 @@ public class Engine {
             }
         });
         ArrayList<Response> result = new ArrayList<>(documentList.values());
-        Collections.sort(result);
+        Collections.sort(result); //TODO is failing
         return result.subList(0, numberOfResults);
     }
 
