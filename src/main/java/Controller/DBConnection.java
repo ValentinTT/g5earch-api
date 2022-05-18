@@ -1,7 +1,6 @@
 package Controller;
 
 import Model.PostTerm;
-import Model.Response;
 import Model.VocabularyWord;
 
 import java.io.File;
@@ -33,7 +32,7 @@ public class DBConnection {
     public static void postVocabulary(HashMap<String, PostTerm> vocabulary) {
         try {
             StringBuilder query = new StringBuilder();
-            query.append("INSERT INTO g5earch.g5earch.terminos VALUES");
+            query.append("INSERT INTO g5earch.g5earch.terms VALUES");
             vocabulary.forEach((k, v) ->
                     query.append(String.format(
                             "('%s',%d,%d),",
@@ -49,8 +48,8 @@ public class DBConnection {
 
     public static void deleteAllDB() {
         try {
-            _connection.prepareStatement("DELETE FROM g5earch.g5earch.terminos").execute();
-            _connection.prepareStatement("DELETE FROM g5earch.g5earch.documentos").execute();
+            _connection.prepareStatement("DELETE FROM g5earch.g5earch.terms").execute();
+            _connection.prepareStatement("DELETE FROM g5earch.g5earch.documents").execute();
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -58,7 +57,7 @@ public class DBConnection {
 
     public static int getBookId(String bookTitle) {
         try {
-            ResultSet rs = _connection.createStatement().executeQuery("SELECT * FROM g5earch.g5earch.documentos WHERE titulo='" + bookTitle + "'");
+            ResultSet rs = _connection.createStatement().executeQuery("SELECT * FROM g5earch.g5earch.documents WHERE title='" + bookTitle + "'");
             if (rs.next())
                 return rs.getInt("ID");
         } catch (SQLException e) {
@@ -70,7 +69,7 @@ public class DBConnection {
     public static void postBook(File fileEntry) {
         try {
             //TODO calcular el hascode del libro
-            String query = "INSERT INTO g5earch.g5earch.documentos (titulo, \"URI\") VALUES ('" +
+            String query = "INSERT INTO g5earch.g5earch.documents (title, \"URI\") VALUES ('" +
                     fileEntry.getName() + "', '" + fileEntry.getPath() + "');";
             _connection.prepareStatement(query).execute();
         } catch (SQLException e) {
@@ -79,12 +78,11 @@ public class DBConnection {
     }
 
     /**
-     *
      * @return the amount of books indexed
      */
     public static int countBooks() {
         try {
-            ResultSet rs = _connection.prepareStatement("select count(*) from g5earch.documentos").executeQuery();
+            ResultSet rs = _connection.prepareStatement("select count(*) from g5earch.documents").executeQuery();
             rs.next();
             rs.getInt(1);
         } catch (SQLException e) {
@@ -94,16 +92,15 @@ public class DBConnection {
     }
 
     /**
-     *
      * @param term
      * @param numberOfResults
      * @return all the columns of the table Documents and the frequency of the term
      */
     public static ResultSet getTerm(VocabularyWord term, int numberOfResults) {
         try {
-            return _connection.prepareStatement("select documentos.*, terminos.frecuencia from g5earch.terminos join g5earch.documentos"
-                    + " on documentos.\"ID\" = terminos.\"IDDocumento\" where terminos.nombre='" + term.getWord() +
-                    "' order by terminos.frecuencia desc limit " + numberOfResults + ";").executeQuery();
+            return _connection.prepareStatement("select documents.*, terms.frequency from g5earch.terms join g5earch.documents"
+                    + " on documents.\"ID\" = terms.\"DocumentID\" where terms.name='" + term.getWord() +
+                    "' order by terms.frequency desc limit " + numberOfResults + ";").executeQuery();
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -111,12 +108,11 @@ public class DBConnection {
     }
 
     /**
-     *
      * @return all the columns of the table Terms
      */
     public static ResultSet getAllTerms() {
         try {
-            return _connection.prepareStatement("select nombre, count(*), max(frecuencia) from g5earch.terminos group by nombre;").executeQuery();
+            return _connection.prepareStatement("select name, count(*), max(frequency) from g5earch.terms group by name;").executeQuery();
         } catch (SQLException e) {
             e.printStackTrace();
         }
