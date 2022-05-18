@@ -10,6 +10,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 
 
 public class Engine {
@@ -89,7 +90,7 @@ public class Engine {
      * @param numberOfResults //R --> number of documents to return
      * @return
      */
-    public ArrayList<Response> search(String searchQuery, int numberOfResults) {
+    public List<Response> search(String searchQuery, int numberOfResults) {
         ArrayList<VocabularyWord> queryUser = buildQueryUser(searchQuery);
         HashMap<Integer, Response> documentList = new HashMap<>(); //HashMap<IDDoc, Response>
 
@@ -120,7 +121,7 @@ public class Engine {
         });
         ArrayList<Response> result = new ArrayList<>(documentList.values());
         Collections.sort(result);
-        return (ArrayList<Response>) result.subList(0, numberOfResults);
+        return (List<Response>) result.subList(0, numberOfResults);
     }
 
     private ArrayList<VocabularyWord> buildQueryUser(String searchQuery) {

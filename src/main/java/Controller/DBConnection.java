@@ -101,8 +101,8 @@ public class DBConnection {
      */
     public static ResultSet getTerm(VocabularyWord term, int numberOfResults) {
         try {
-            return _connection.prepareStatement("select documentos.*, terminos.frecuencia from g5earch.terminos join g5earch.documentos" +
-                    "on documentos.\"ID\" = terminos.\"IDDocumento\" where terminos.nombre='" + term.getWord() +
+            return _connection.prepareStatement("select documentos.*, terminos.frecuencia from g5earch.terminos join g5earch.documentos"
+                    + " on documentos.\"ID\" = terminos.\"IDDocumento\" where terminos.nombre='" + term.getWord() +
                     "' order by terminos.frecuencia desc limit " + numberOfResults + ";").executeQuery();
         } catch (SQLException e) {
             e.printStackTrace();

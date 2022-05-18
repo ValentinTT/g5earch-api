@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 @SpringBootApplication
 @RestController
@@ -22,7 +23,7 @@ public class G5earchApiApplication {
     }
 
     @GetMapping(value = "/search", produces = "application/json")
-    public ArrayList<Response> search(@RequestParam(value = "text", defaultValue = "") String searchQuery) {
+    public List<Response> search(@RequestParam(value = "text", defaultValue = "") String searchQuery) {
         engine = new Engine(false);
         return engine.search(searchQuery, 20);
 //        ArrayList<Response> arr = new ArrayList<>();
