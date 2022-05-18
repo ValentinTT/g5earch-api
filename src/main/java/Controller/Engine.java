@@ -20,7 +20,7 @@ public class Engine {
 
     public Engine(boolean shouldIndex) {
         DBConnection.getConnection();
-        //index(shouldIndex);
+        index(shouldIndex);
         vocabulary = createVocabulary();
         numberOfBooks = DBConnection.countBooks();
     }
@@ -35,7 +35,7 @@ public class Engine {
                 vocabulary.put(term, new VocabularyWord(term, rs.getInt(2), rs.getInt(3)));
             }
             return vocabulary;
-        } catch (SQLException e){
+        } catch (SQLException e) {
             e.printStackTrace();
         }
         return null;
@@ -54,7 +54,7 @@ public class Engine {
 
             int bookId = DBConnection.getBookId(fileEntry.getName());
             postVocabularyBook(bookId, fileEntry.getPath());
-            break;
+            break; //TODO remove
         }
     }
 
@@ -96,7 +96,7 @@ public class Engine {
 
         queryUser.stream().forEach(vocabularyWord -> { //iterate over query words
             //increase for each document
-            double increase = Math.log10(numberOfBooks/(double)(vocabularyWord.getNr()));
+            double increase = Math.log10(numberOfBooks / (double) (vocabularyWord.getNr()));
             ResultSet rsTerms = DBConnection.getTerm(vocabularyWord, numberOfResults);
             try {
                 while (rsTerms.next()) {
@@ -121,7 +121,7 @@ public class Engine {
         });
         ArrayList<Response> result = new ArrayList<>(documentList.values());
         Collections.sort(result);
-        return (List<Response>) result.subList(0, numberOfResults);
+        return result.subList(0, numberOfResults);
     }
 
     private ArrayList<VocabularyWord> buildQueryUser(String searchQuery) {
