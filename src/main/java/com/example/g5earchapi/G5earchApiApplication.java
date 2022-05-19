@@ -2,12 +2,21 @@ package com.example.g5earchapi;
 
 import Controller.Engine;
 import Model.Response;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.List;
 
 @SpringBootApplication
@@ -15,6 +24,8 @@ import java.util.List;
 public class G5earchApiApplication {
 
     private static Engine engine;
+    @Value("${file.upload-dir}")
+    String FILE_DIRECTORY;
 
     public static void main(String[] args) {
         engine = new Engine(false);
@@ -33,5 +44,21 @@ public class G5earchApiApplication {
 //        return response;
 //        return null;
     }
-    // /subir?libro=010101010101001011010010101 motor.add(libro.txt, titulo)
+
+    @PostMapping("/upload")
+    public ResponseEntity<Object> fileUpload(@RequestParam("File") MultipartFile file){
+        //TODO: validate type of file
+        File newFile = new File(FILE_DIRECTORY+file.getOriginalFilename());
+        try {
+            newFile.createNewFile();
+            FileOutputStream fos = new FileOutputStream(newFile);
+            fos.write(file.getBytes());
+            fos.close();
+            G5earchApiApplication.engine.index(false);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return new ResponseEntity<>("Error.", HttpStatus.BAD_REQUEST);
+        }
+        return new ResponseEntity<>("The File Uploaded Successfully", HttpStatus.OK);
+    }
 }

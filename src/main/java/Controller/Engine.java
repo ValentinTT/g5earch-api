@@ -42,10 +42,8 @@ public class Engine {
     }
 
     public void index(boolean forceReindexing) {
-        if (!forceReindexing)
-            return;
-
-        DBConnection.deleteAllDB(); //remove db
+        if (forceReindexing)
+            DBConnection.deleteAllDB(); //remove db
 
         final File folder = new File("src/main/resources/static/documentos");
         for (final File fileEntry : folder.listFiles()) {
