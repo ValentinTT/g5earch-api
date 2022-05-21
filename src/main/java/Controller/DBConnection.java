@@ -40,7 +40,7 @@ public class DBConnection {
                     ))
             );
             query.replace(query.length() - 1, query.length(), ";");
-            _connection.prepareStatement(query.toString()).execute();
+            _connection.prepareStatement(query.toString()). execute();
         } catch (SQLException e) {
             e.printStackTrace();
         }

@@ -16,7 +16,7 @@ import java.util.List;
 public class Engine {
     HashMap<String, VocabularyWord> vocabulary;
     int numberOfBooks; //N
-    private static final String splitRegex = "[,;:*\\s.\"¿?!¡{}\\[\\]\\(\\)]";
+    private static final String splitRegex = "[,;:*\\s.\"¿?!¡{}\\[\\]\\(\\)]"; //TODO: add spaces
 
     public Engine(boolean shouldIndex) {
         DBConnection.getConnection();
@@ -53,7 +53,7 @@ public class Engine {
 
             int bookId = DBConnection.getBookId(fileEntry.getName());
             postVocabularyBook(bookId, fileEntry.getPath());
-            break; //TODO remove
+            //break; //TODO remove
         }
     }
 
@@ -71,11 +71,14 @@ public class Engine {
     /**
      * Indicate if a book is previously indexed
      *
-     * @param bookName
+     * @param bookTitle
      * @return
      */
-    private boolean bookIsIndexed(String bookName) {
-        //TODO with hashcode
+    private boolean bookIsIndexed(String bookTitle) {
+        int IDBook = DBConnection.getBookId(bookTitle);
+        if(IDBook != -1){
+            return true;
+        }
         return false;
     }
 

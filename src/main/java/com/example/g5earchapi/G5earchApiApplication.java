@@ -47,18 +47,29 @@ public class G5earchApiApplication {
 
     @PostMapping("/upload")
     public ResponseEntity<Object> fileUpload(@RequestParam("File") MultipartFile file){
-        //TODO: validate type of file
+        //TODO: format the responses with correct error codes
+        if (file == null)
+            return new ResponseEntity<>("Error.", HttpStatus.BAD_REQUEST);
+
         File newFile = new File(FILE_DIRECTORY+file.getOriginalFilename());
         try {
-            newFile.createNewFile();
-            FileOutputStream fos = new FileOutputStream(newFile);
-            fos.write(file.getBytes());
-            fos.close();
-            G5earchApiApplication.engine.index(false);
+            int indexOfType = newFile.getName().lastIndexOf(".");
+            if(indexOfType >= 0) {
+                //If file type is "txt" --> upload and indexOfType
+                if (file.getOriginalFilename().substring(indexOfType+1).equals("txt")) {
+                    //TODO: extract this code in Reader?
+                    newFile.createNewFile();
+                    FileOutputStream fos = new FileOutputStream(newFile);
+                    fos.write(file.getBytes());
+                    fos.close();
+                    G5earchApiApplication.engine.index(false);
+                    return new ResponseEntity<>("The File Uploaded Successfully", HttpStatus.OK);
+                }
+            }
         } catch (IOException e) {
             e.printStackTrace();
             return new ResponseEntity<>("Error.", HttpStatus.BAD_REQUEST);
         }
-        return new ResponseEntity<>("The File Uploaded Successfully", HttpStatus.OK);
+        return new ResponseEntity<>("Error.", HttpStatus.BAD_REQUEST);
     }
 }
