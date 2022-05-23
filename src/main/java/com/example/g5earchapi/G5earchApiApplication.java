@@ -46,17 +46,17 @@ public class G5earchApiApplication {
     }
 
     @PostMapping("/upload")
-    public ResponseEntity<Object> fileUpload(@RequestParam("File") MultipartFile file){
+    public ResponseEntity<Object> fileUpload(@RequestParam("File") MultipartFile file) {
         //TODO: format the responses with correct error codes
         if (file == null)
             return new ResponseEntity<>("Error.", HttpStatus.BAD_REQUEST);
 
-        File newFile = new File(FILE_DIRECTORY+file.getOriginalFilename());
+        File newFile = new File(FILE_DIRECTORY + file.getOriginalFilename());
         try {
             int indexOfType = newFile.getName().lastIndexOf(".");
-            if(indexOfType >= 0) {
+            if (indexOfType >= 0) {
                 //If file type is "txt" --> upload and indexOfType
-                if (file.getOriginalFilename().substring(indexOfType+1).equals("txt")) {
+                if (file.getOriginalFilename().substring(indexOfType + 1).equals("txt")) {
                     //TODO: extract this code in Reader?
                     newFile.createNewFile();
                     FileOutputStream fos = new FileOutputStream(newFile);

@@ -142,5 +142,9 @@ public class Engine {
         Collections.sort(queryUser);
         return queryUser;
     }
+
+    public boolean fileExists(String URI) {
+        return DBConnection.fileExsists(URI);
+    }
 }
 

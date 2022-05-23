@@ -118,4 +118,19 @@ public class DBConnection {
         }
         return null;
     }
+
+    public static boolean fileExsists(String uri) {
+        try {
+            ResultSet rs = _connection.prepareStatement("select 1 from g5earch.documents where documents.\"URI\"=" + uri + ";").executeQuery();
+            if(rs.next()){
+                if(rs.getInt(1) == 1){
+                    return true;
+                }
+            }
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+            return false;
+        }
+        return false;
+    }
 }
