@@ -84,7 +84,7 @@ public class DBConnection {
         try {
             ResultSet rs = _connection.prepareStatement("select count(*) from g5earch.documents").executeQuery();
             rs.next();
-            rs.getInt(1);
+            return rs.getInt(1);
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -121,7 +121,7 @@ public class DBConnection {
 
     public static boolean fileExsists(String uri) {
         try {
-            ResultSet rs = _connection.prepareStatement("select 1 from g5earch.documents where documents.\"URI\"=" + uri + ";").executeQuery();
+            ResultSet rs = _connection.prepareStatement("select 1 from g5earch.documents where documents.\"URI\"='" + uri + "';").executeQuery();
             if(rs.next()){
                 if(rs.getInt(1) == 1){
                     return true;

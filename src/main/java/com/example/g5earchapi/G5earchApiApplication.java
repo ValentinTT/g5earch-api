@@ -5,18 +5,20 @@ import Model.Response;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.ObjectError;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 
 @SpringBootApplication
@@ -34,22 +36,13 @@ public class G5earchApiApplication {
 
     @GetMapping(value = "/search", produces = "application/json")
     public List<Response> search(@RequestParam(value = "text", defaultValue = "") String searchQuery) {
-        return G5earchApiApplication.engine.search(searchQuery, 5);
-//        ArrayList<Response> arr = new ArrayList<>();
-//        for(int i = 0; i < Math.random()*5+3; i++) {
-//            arr.add(new Response("The Hobbit", "https://www.anderson1.org/site/handlers/filedownload.ashx?moduleinstanceid=24440&dataid=44258&FileName=hobbit.pdf", "In a hole in the ground there lived a hobbit. Not a nasty, dirty, wet hole, filled with the ends of worms and an oozy smell, nor yet a dry, bare, sandy hole with nothing in it to sit down on or to eat: it was a hobbit-hole, and that means comfort. "));
-//        }
-//        HashMap<String, ArrayList<Response>> response = new  HashMap<>();
-//        response.put("response", arr);
-//        return response;
-//        return null;
+        return G5earchApiApplication.engine.search(searchQuery, 10);
     }
 
     @PostMapping("/upload")
     public ResponseEntity<Object> fileUpload(@RequestParam("File") MultipartFile file) {
-        //TODO: format the responses with correct error codes
         if (file == null)
-            return new ResponseEntity<>("Error.", HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>("No file uploaded.", HttpStatus.BAD_REQUEST);
 
         File newFile = new File(FILE_DIRECTORY + file.getOriginalFilename());
         try {
@@ -68,8 +61,26 @@ public class G5earchApiApplication {
             }
         } catch (IOException e) {
             e.printStackTrace();
-            return new ResponseEntity<>("Error.", HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
-        return new ResponseEntity<>("Error.", HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>("Wrong file type.", HttpStatus.BAD_REQUEST);
+    }
+
+    @GetMapping("/download/{fileName:.+}")
+    public ResponseEntity<Resource> fileDownload(@PathVariable String fileName) {
+        Path path = Paths.get(FILE_DIRECTORY + fileName);
+        if (!G5earchApiApplication.engine.fileExists(path.toString())) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+        Resource resource;
+        try {
+            resource = new UrlResource(path.toUri());
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=\"" + resource.getFilename() + "\"")
+                .body(resource);
     }
 }

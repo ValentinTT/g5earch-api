@@ -27,6 +27,6 @@ public class Response implements Comparable<Response>{
 
     @Override
     public int compareTo(Response o) {
-        return Double.valueOf(relevanceIndex).compareTo(Double.valueOf(o.getRelevanceIndex()));
+        return Double.valueOf(o.getRelevanceIndex()).compareTo(Double.valueOf(relevanceIndex));
     }
 }

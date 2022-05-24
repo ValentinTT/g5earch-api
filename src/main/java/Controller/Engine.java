@@ -122,7 +122,7 @@ public class Engine {
             }
         });
         ArrayList<Response> result = new ArrayList<>(documentList.values());
-        Collections.sort(result); //TODO is failing
+        Collections.sort(result);
         return result.subList(0, numberOfResults);
     }
 
