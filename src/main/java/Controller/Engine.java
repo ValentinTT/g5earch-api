@@ -3,6 +3,7 @@ package Controller;
 import Model.PostTerm;
 import Model.Response;
 import Model.VocabularyWord;
+import org.springframework.web.context.annotation.ApplicationScope;
 
 import java.io.File;
 import java.sql.ResultSet;
@@ -12,21 +13,22 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
-
+@ApplicationScope
 public class Engine {
+    DBConnection dbConnection;
     HashMap<String, VocabularyWord> vocabulary;
     int numberOfBooks; //N
     private static final String splitRegex = "[,;:*\\s.\"¿?!¡{}\\[\\]\\(\\)]"; //TODO: add spaces
 
     public Engine(boolean shouldIndex) {
-        DBConnection.getConnection();
+        dbConnection = new DBConnection();
         index(shouldIndex);
         vocabulary = createVocabulary();
-        numberOfBooks = DBConnection.countBooks();
+        numberOfBooks = dbConnection.countBooks();
     }
 
     private HashMap<String, VocabularyWord> createVocabulary() {
-        ResultSet rs = DBConnection.getAllTerms();
+        ResultSet rs = dbConnection.getAllTerms();
         HashMap<String, VocabularyWord> vocabulary = new HashMap<>();
         String term;
         try {
@@ -43,15 +45,15 @@ public class Engine {
 
     public void index(boolean forceReindexing) {
         if (forceReindexing)
-            DBConnection.deleteAllDB(); //remove db
+            dbConnection.deleteAllDB(); //remove db
 
         final File folder = new File("src/main/resources/static/documentos");
         for (final File fileEntry : folder.listFiles()) {
             //TODO: calculate hashCode
             if (bookIsIndexed(fileEntry.getName())) continue;
-            else DBConnection.postBook(fileEntry);
+            else dbConnection.postBook(fileEntry);
 
-            int bookId = DBConnection.getBookId(fileEntry.getName());
+            int bookId = dbConnection.getBookId(fileEntry.getName());
             postVocabularyBook(bookId, fileEntry.getPath());
             //break; //TODO remove
         }
@@ -65,7 +67,7 @@ public class Engine {
      */
     private void postVocabularyBook(int bookId, String bookUri) {
         HashMap<String, PostTerm> vocabulary = Reader.createBookVocabulary(bookId, bookUri, splitRegex);
-        DBConnection.postVocabulary(vocabulary);
+        dbConnection.postVocabulary(vocabulary);
     }
 
     /**
@@ -75,16 +77,8 @@ public class Engine {
      * @return
      */
     private boolean bookIsIndexed(String bookTitle) {
-        int IDBook = DBConnection.getBookId(bookTitle);
-        if(IDBook != -1){
-            return true;
-        }
-        return false;
-    }
-
-    public void addBook() {
-        //adding book into the folder and then indexig
-        //indexBook(bookUri);
+        int IDBook = dbConnection.getBookId(bookTitle);
+        return IDBook != -1;
     }
 
     /**
@@ -99,7 +93,7 @@ public class Engine {
         queryUser.stream().forEach(vocabularyWord -> { //iterate over query words
             //increase for each document
             double increase = Math.log10(numberOfBooks / (double) (vocabularyWord.getNr()));
-            ResultSet rsTerms = DBConnection.getTerm(vocabularyWord, numberOfResults);
+            ResultSet rsTerms = dbConnection.getTerm(vocabularyWord, numberOfResults);
             try {
                 while (rsTerms.next()) {
                     int ID = rsTerms.getInt("ID");
@@ -144,7 +138,7 @@ public class Engine {
     }
 
     public boolean fileExists(String URI) {
-        return DBConnection.fileExsists(URI);
+        return dbConnection.fileExsists(URI);
     }
 }
 

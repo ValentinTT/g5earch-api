@@ -43,6 +43,10 @@ public class G5earchApiApplication {
     public ResponseEntity<Object> fileUpload(@RequestParam("File") MultipartFile file) {
         if (file == null)
             return new ResponseEntity<>("No file uploaded.", HttpStatus.BAD_REQUEST);
+        Path path = Paths.get(FILE_DIRECTORY + file.getOriginalFilename());
+        if (G5earchApiApplication.engine.fileExists(path.toString())) {
+            return new ResponseEntity<>("File " + file.getOriginalFilename() + " already exists.", HttpStatus.NOT_FOUND);
+        }
 
         File newFile = new File(FILE_DIRECTORY + file.getOriginalFilename());
         try {
