@@ -14,12 +14,15 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Locale;
+import java.util.Scanner;
 
 @SpringBootApplication
 @RestController
@@ -36,7 +39,7 @@ public class G5earchApiApplication {
 
     @GetMapping(value = "/search", produces = "application/json")
     public List<Response> search(@RequestParam(value = "text", defaultValue = "") String searchQuery) {
-        return G5earchApiApplication.engine.search(searchQuery, 10);
+        return G5earchApiApplication.engine.search(searchQuery.toLowerCase(Locale.ROOT), 10);
     }
 
     @PostMapping("/upload")
@@ -60,7 +63,7 @@ public class G5earchApiApplication {
                     fos.write(file.getBytes());
                     fos.close();
                     G5earchApiApplication.engine.index(false);
-                    return new ResponseEntity<>("The File Uploaded Successfully", HttpStatus.OK);
+                    return new ResponseEntity<>("The File Was Successfully Uploaded", HttpStatus.OK);
                 }
             }
         } catch (IOException e) {
@@ -68,6 +71,17 @@ public class G5earchApiApplication {
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
         return new ResponseEntity<>("Wrong file type.", HttpStatus.BAD_REQUEST);
+    }
+
+    private static void printFile(File newFile) {
+        try {
+            Scanner sc = new Scanner(newFile);
+            while (sc.hasNext()) {
+                System.out.println(sc.next());
+            }
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
     }
 
     @GetMapping("/download/{fileName:.+}")

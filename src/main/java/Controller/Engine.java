@@ -55,7 +55,6 @@ public class Engine {
 
             int bookId = dbConnection.getBookId(fileEntry.getName());
             postVocabularyBook(bookId, fileEntry.getPath());
-            //break; //TODO remove
         }
     }
 
@@ -117,6 +116,7 @@ public class Engine {
         });
         ArrayList<Response> result = new ArrayList<>(documentList.values());
         Collections.sort(result);
+        if (result.size() < numberOfResults) return result;
         return result.subList(0, numberOfResults);
     }
 
