@@ -26,25 +26,13 @@ SET default_table_access_method = heap;
 --
 
 CREATE TABLE g5earch.documents (
-    "ID" integer NOT NULL,
+    "ID" SERIAL PRIMARY KEY,
     title character varying NOT NULL,
     "URI" character varying NOT NULL
 );
 
 
 ALTER TABLE g5earch.documents OWNER TO postgres;
-
---
--- Name: documentos_ID_seq; Type: SEQUENCE; Schema: g5earch; Owner: postgres
---
-
-ALTER TABLE g5earch.documents ALTER COLUMN "ID" ADD GENERATED ALWAYS AS IDENTITY (
-    SEQUENCE NAME g5earch."documentos_ID_seq"
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-);
 
 
 --
@@ -59,13 +47,6 @@ CREATE TABLE g5earch.terms (
 
 
 ALTER TABLE g5earch.terms OWNER TO postgres;
-
---
--- Name: documents documentos_pkey; Type: CONSTRAINT; Schema: g5earch; Owner: postgres
---
-
-ALTER TABLE ONLY g5earch.documents
-    ADD CONSTRAINT documentos_pkey PRIMARY KEY ("ID");
 
 
 --
