@@ -2,14 +2,16 @@ package Controller;
 
 import Model.PostTerm;
 import Model.VocabularyWord;
-import org.springframework.web.context.annotation.ApplicationScope;
 
 import java.io.File;
 import java.sql.*;
 import java.util.HashMap;
 
-//TODO: prepareStatement
-@ApplicationScope
+/**
+ * @author Group 5 - DLC
+ * @version 2022-June
+ */
+
 public class DBConnection {
     private Connection _connection;
 
