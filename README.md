@@ -15,6 +15,6 @@ To read the documentation, open the link below from your local repository
 All the libraries required are inlcuded on the dependencies on pom.xml file.
 
 >## Endpoints
-*search: /search?text="query"
-*download: /download/"fileName.txt"
-*upload: /upload
+* search: /search?text="query"
+* download: /download/"fileName.txt"
+* upload: /upload
