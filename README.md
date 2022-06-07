@@ -12,7 +12,7 @@ To read the documentation, open the following link from your local repository
 
 
 >## Installation
-All the libraries required are inlcuded on the dependencies on pom.xml file.
+All the libraries required are inlcuded on the dependencies pom.xml file.
 
 >## Endpoints
 * Search: /search?text="query"
