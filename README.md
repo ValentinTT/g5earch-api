@@ -4,7 +4,7 @@ This is an API REST made with Java and Spring Boot. It allows you to search and 
 
 >## Documentation
 To read the documentation, open the link below from your local repository
-* .\g5earch-api\resources\Documentation\index.html
+- .\g5earch-api\resources\Documentation\index.html
 
 >## Requirements
 * Java 17
