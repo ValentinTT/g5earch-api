@@ -7,8 +7,8 @@ To read the documentation, open the link below from your local repository
 ..\g5earch-api\resources
 
 >## Requirements
-Java 17
-PostgreSQL
+*Java 17
+*PostgreSQL
 
 
 >## Instalation
