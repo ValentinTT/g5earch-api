@@ -3,7 +3,7 @@
 This is an API REST made with Java and Spring Boot. It allows you to search and index (upload and download) .txt files through 3 different endpoints.
 
 >## Documentation
-To read the documentation, open the link below from your local repository
+To read the documentation, open the following link from your local repository
 .\g5earch-api\resources\Documentation\index.html
 
 >## Requirements
@@ -11,7 +11,7 @@ To read the documentation, open the link below from your local repository
 * PostgreSQL
 
 
->## Instalation
+>## Installation
 All the libraries required are inlcuded on the dependencies on pom.xml file.
 
 >## Endpoints
