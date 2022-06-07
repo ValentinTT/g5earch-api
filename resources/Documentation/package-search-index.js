@@ -1,0 +1,1 @@
+packageSearchIndex = [{"l":"All Packages","u":"allpackages-index.html"},{"l":"com.example.g5earchapi"},{"l":"Controller"},{"l":"Model"}];updateSearchResults();

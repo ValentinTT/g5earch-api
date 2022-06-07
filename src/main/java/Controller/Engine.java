@@ -1,178 +1,180 @@
 package Controller;
 
-import java.io.BufferedReader;
+import Model.PostTerm;
+import Model.Response;
+import Model.VocabularyWord;
+
 import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
-import java.util.Locale;
+import java.util.List;
+
+/**
+ * @author Group 5 - DLC
+ * @version 2022-June
+ */
 
 public class Engine {
-    // nr tf aux
-    HashMap<String, ArrayList<Integer>> vocabulary;
-    Connection connection;
-    HashMap<String, ArrayList<Integer>> frequencyTable;
+    DBConnection dbConnection;
+    HashMap<String, VocabularyWord> vocabulary;
     int numberOfBooks; //N
+    String FILE_DIRECTORY;
+    private static final String splitRegex = "[,;:*\\-=^<>+@|\\/\\\\_#$%&¬|~`¨´'°\\s.\"¿?!¡{}\\[\\]\\(\\)]";
 
-    public Engine(boolean shouldIndex) {
-        vocabulary = new HashMap<>();
-        connection = DBConnection.getConnection();
+    /**
+     * @param shouldIndex
+     * @param FILE_DIRECTORY
+     */
+    public Engine(boolean shouldIndex, String FILE_DIRECTORY) {
+        dbConnection = new DBConnection();
+        this.FILE_DIRECTORY = FILE_DIRECTORY;
         index(shouldIndex);
-        createFrequencyTable();
-        countBooks();
+        vocabulary = createVocabulary();
+        numberOfBooks = dbConnection.countBooks();
     }
 
-    public void index(boolean force) {
-        if (force)
-            deleteAllDB();
+    /**
+     * Creates the vocabulary in memory for all the terms indexed, creating the VocabylaryWord objects.
+     *
+     * @return a HashMap where:
+     * Key: is the term
+     * Value: is an object of the class VocabularyWord
+     */
+    private HashMap<String, VocabularyWord> createVocabulary() {
+        ResultSet rs = dbConnection.getAllTerms();
+        HashMap<String, VocabularyWord> vocabulary = new HashMap<>();
+        String term;
+        try {
+            while (rs.next()) {
+                term = rs.getString(1);
+                vocabulary.put(term, new VocabularyWord(term, rs.getInt(2), rs.getInt(3)));
+            }
+            return vocabulary;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
 
-        final File folder = new File("src/main/resources/static/documentos");
-        long startTime = System.nanoTime();
+    /**
+     * Indexes the documents and terms, and post them on the database
+     *
+     * @param forceReindexing if it's true: force to index all the documents again, deleting all the documents and terms previously indexed
+     *                        if it's false: just index the documents that are not indexed
+     */
+    public void index(boolean forceReindexing) {
+        if (forceReindexing)
+            dbConnection.deleteAllDB();
+
+        final File folder = new File(this.FILE_DIRECTORY);
         for (final File fileEntry : folder.listFiles()) {
             if (bookIsIndexed(fileEntry.getName()))
                 continue;
-            else { // Agrego el documento nuevo si no está indexado
-                postBook(fileEntry);
-            }
-            // Indexar documento actual
-            indexBook(fileEntry.getPath());
-            break;
-        }
-        long endTime = System.nanoTime();
-        System.out.println((endTime - startTime) / 1000000000);
-        // print vocabulary
-        //printVocab();
-    }
-
-    // TODO: remove
-    private void printVocab() {
-        vocabulary.forEach((k, v) -> System.out.println(k + "->" + v.toString()));
-    }
-
-    private void clearVocabulary() {
-        // clear Vocabulary 3 position. TODO: capaz funcional es menos eficiente
-        vocabulary.forEach((k, v) -> v.set(2, 0));
-    }
-
-    private void postVocabulary(String bookURI) {
-        // Add book to document's tablet
-        // Add each vocabulary entry with index 2 != 0 to the table post
-        try {
-            ResultSet rs = connection.createStatement()
-                    .executeQuery("SELECT * FROM g5earch.g5earch.documentos WHERE \"URI\"= '" + bookURI + "'");
-            rs.next();
-            final int bookId = rs.getInt("ID");
-            StringBuilder query = new StringBuilder();
-            query.append("INSERT INTO g5earch.g5earch.terminos VALUES");
-            vocabulary.entrySet().stream().filter(e -> e.getValue().get(2) != 0)
-                    .forEach((e) -> {
-                        query.append(String.format("('%s',%d,%d),", e.getKey().replace("'", "''"), bookId, e.getValue().get(2)));
-                        System.out.println(String.format("('%s',%d,%d),", e.getKey().replace("'", "''"), bookId, e.getValue().get(2)));
-                    });
-            query.deleteCharAt(query.length() - 1);
-            query.append(";");
-
-            //connection.prepareStatement(query.toString()).execute();
-
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void postBook(File fileEntry) {
-        try {
-            String query = "INSERT INTO g5earch.g5earch.documentos (titulo, \"URI\") VALUES ('" + fileEntry.getName()
-                    + "', '" + fileEntry.getPath() + "');";
-            connection.prepareStatement(query).execute();
-
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void indexBook(String bookUri) {
-        clearVocabulary();
-        try {
-            BufferedReader in = new BufferedReader(new FileReader(bookUri));
-            String line;
-
-            while ((line = in.readLine()) != null) {
-                String[] words = line.split("[,;:*\\s.\"¿?!¡{}\\[\\]\\(\\)]");
-                for (String word : words) {
-                    word = word.toLowerCase(Locale.ROOT);
-                    ArrayList<Integer> value = vocabulary.get(word);
-                    if (value == null) { // First appearance in ALL indexing
-                        value = new ArrayList(Arrays.asList(1, 1, 1)); // Initialize aux
-                        vocabulary.put(word, value);
-                    } else {
-                        if (value.get(2) == 0) // First word's appearance in this document, increase n
-                            value.set(0, value.get(0) + 1);
-                        value.set(2, value.get(2) + 1); // increase aux
-                        // update maxTf
-                        value.set(1, Math.max(value.get(2), value.get(1)));
-                    }
-                }
-            }
-            postVocabulary(bookUri);
-            in.close();
-        } catch (IOException e) {
-            System.out.println("File Read Error");
+            else
+                //Index the document
+                dbConnection.postBook(fileEntry);
+            //Post the vocabulary of each book
+            int bookId = dbConnection.getBookId(fileEntry.getName());
+            postVocabularyBook(bookId, fileEntry.getPath());
         }
     }
 
     /**
-     * Indica si existe un libro con el id de bookName
+     * Posts the vocabulary for each book
      *
-     * @param bookName
-     * @return
+     * @param bookId  the identifier number of the book
+     * @param bookUri the relative path of the book where it's stored
      */
-    private boolean bookIsIndexed(String bookName) {
-        //TODO
-        return false;
+    private void postVocabularyBook(int bookId, String bookUri) {
+        HashMap<String, PostTerm> vocabulary = FileController.createBookPostList(bookId, bookUri, splitRegex);
+        if (vocabulary != null)
+            dbConnection.postVocabulary(vocabulary);
     }
 
-    public void addBook() {
-        // adding book into the folder and then indexig
-        // indexBook(bookUri);
+    /**
+     * Indicate if a book is previously indexed
+     *
+     * @param bookTitle the name of the book
+     * @return a boolean that indicate if the book is indexed (true) or not (false)
+     */
+    private boolean bookIsIndexed(String bookTitle) {
+        int IDBook = dbConnection.getBookId(bookTitle);
+        return IDBook != -1;
     }
 
-    private void deleteAllDB() {
-        try {
-            connection.prepareStatement("DELETE FROM g5earch.g5earch.terminos").execute();
-            connection.prepareStatement("DELETE FROM g5earch.g5earch.documentos").execute();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
+    /**
+     * This is the method that search all the terms passed in the query user, and returns a list of Response
+     * objects, which contains a reference to the most relevant documents indexed for that query
+     *
+     * @param searchQuery     sentence to search through all the documents
+     * @param numberOfResults //R --> number of documents to return
+     * @return A list that contains the number of documents sorted relay on the word's weight
+     */
+    public List<Response> search(String searchQuery, int numberOfResults) {
+        ArrayList<VocabularyWord> queryUser = buildQueryUser(searchQuery);
+        HashMap<Integer, Response> documentList = new HashMap<>(); //HashMap<IDDoc, Response>
 
-    public void createFrequencyTable() {
-        try {
-            ResultSet rs = connection.prepareStatement("select nombre, count(*), max(frecuencia) from g5earch.terminos group by nombre;").executeQuery();
-            String term;
-            ArrayList<Integer> array;
-            while (rs.next()) {
-                term = rs.getString(1);
-                array = new ArrayList<>(Arrays.asList(rs.getInt(2), rs.getInt(3)));
-                frequencyTable.put(term, array);
+        queryUser.stream().forEach(vocabularyWord -> { //iterate over query words
+            //increase for each document
+            double increase = Math.log10(numberOfBooks / (double) (vocabularyWord.getNr()));
+            ResultSet rsTerms = dbConnection.getTerm(vocabularyWord, 50);
+            try {
+                while (rsTerms.next()) {
+                    int ID = rsTerms.getInt("ID");
+                    //increase the relevance index, given the frequency (tf) of each term
+                    double relevanceIndex = rsTerms.getInt("frequency") * increase;
+                    if (documentList.get(ID) != null) { // update the response
+                        documentList.get(ID).increaseScore(relevanceIndex);
+                    } else {
+                        //create response object
+                        String name = rsTerms.getString("title");
+                        String URI = rsTerms.getString("URI");
+                        //TODO: definir que para los tf=0 no se lean y corte el ciclo
+                        String preview = ""; //TODO: definir el preview
+                        Response response = new Response(name, URI, preview, relevanceIndex);
+                        documentList.put(ID, response);
+                    }
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+        });
+        ArrayList<Response> result = new ArrayList<>(documentList.values());
+        //Sort the documents by relevanceIndex
+        Collections.sort(result);
+        if (result.size() < numberOfResults) return result;
+        return result.subList(0, numberOfResults);
     }
 
-    public void countBooks() {
-        try {
-            ResultSet rs = connection.prepareStatement("select count(*) from g5earch.documentos;").executeQuery();
-            while (rs.next()) {
-                numberOfBooks = rs.getInt(1);
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
+    /**
+     * Splits the user's query to search the terms in the vocabulary
+     *
+     * @param searchQuery The sentence of the user's query to search
+     * @return an ArrayList with all the words and the weight of the word
+     */
+    private ArrayList<VocabularyWord> buildQueryUser(String searchQuery) {
+        String[] words = searchQuery.split(splitRegex);
+        ArrayList<VocabularyWord> queryUser = new ArrayList(words.length * 2);
+        for (String word : words) {
+            //search for all words in our vocabulary
+            VocabularyWord vocabularyWord = vocabulary.get(word);
+            //add the word if its contained
+            if (vocabularyWord != null) queryUser.add(vocabularyWord);
         }
+        //order by idf (less inverse frequencies) asc
+        Collections.sort(queryUser);
+        return queryUser;
+    }
+
+    /**
+     * @param URI the sentence with a specific route and filename
+     * @return true: if the file already exists in the DB
+     * false: if the file isn't indexed in the DB
+     */
+    public boolean fileExists(String URI) {
+        return dbConnection.fileExsists(URI);
     }
 }

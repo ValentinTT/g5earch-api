@@ -33,3 +33,4 @@ build/
 .vscode/
 src/main/java/Controller/Prueba.java
 src/main/resources/static/documentos/
+*.txt
