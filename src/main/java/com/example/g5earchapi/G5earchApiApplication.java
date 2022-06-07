@@ -34,7 +34,7 @@ public class G5earchApiApplication {
      * @param args
      */
     public static void main(String[] args) {
-        engine = new Engine(false, FILE_DIRECTORY);
+        engine = new Engine(true, FILE_DIRECTORY);
         SpringApplication.run(G5earchApiApplication.class, args);
     }
 

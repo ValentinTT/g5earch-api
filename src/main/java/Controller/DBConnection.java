@@ -45,6 +45,7 @@ public class DBConnection {
         try {
             this._connection.prepareStatement("DELETE FROM terms").execute();
             this._connection.prepareStatement("DELETE FROM documents").execute();
+            this._connection.prepareStatement("TRUNCATE  TABLE documents RESTART IDENTITY CASCADE").execute();
         } catch (SQLException e) {
             e.printStackTrace();
         }
