@@ -28,7 +28,7 @@ import java.util.Locale;
 @RestController
 public class G5earchApiApplication {
     private static Engine engine;
-    private static final String FILE_DIRECTORY = "src/main/resources/static/documentos/";
+    private static final String FILE_DIRECTORY = "src/main/resources/static/";
 
     /**
      * @param args
